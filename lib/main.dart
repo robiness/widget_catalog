@@ -10,54 +10,58 @@ void main() {
       catalog: [
         MyFancyWidget.catalog,
         CatalogWidget(
-          name: 'JustAnotherWidget',
+          name: 'InputField',
           description: 'Description 1',
-          keywords: ['keyword1', 'keyword2'],
           builder: (BuildContext context) {
-            return Container(color: Colors.red, child: const Text('Widget 1'));
+            return Container(
+              width: 400,
+              height: 200,
+              color: Colors.red,
+              child: const Text('InputField'),
+            );
           },
         ),
         CatalogWidget(
-          name: 'ListTile',
+          name: 'Container',
           description: 'Description 2',
-          keywords: ['nice', 'hause'],
+          keywords: ['nice', 'hause', 'banana'],
           builder: (BuildContext context) {
-            return Container(color: Colors.blue, child: const Text('Widget 2'));
+            return Container(color: Colors.blue, child: const Text('ListTile'));
           },
         ),
         CatalogWidget(
-          name: 'ListTileAdvanced',
+          name: 'Overlay',
           description: 'Description 3',
-          keywords: ['nice', 'banana'],
           pageBuilder: (BuildContext context, Widget child) {
             return Container(
               color: Colors.purple,
               child: Column(
                 children: [
                   const Text('Wrapper'),
-                  child,
+                  Container(
+                    color: Colors.green,
+                    child: const Text('Overlay'),
+                  ),
                 ],
               ),
             );
           },
           builder: (BuildContext context) {
-            return Container(color: Colors.green, child: const Text('Widget 3'));
+            return Container(color: Colors.green, child: const Text('Overlay'));
           },
         ),
         CatalogWidget(
-          name: 'InputField',
+          name: 'InputTextField',
           description: 'Description 4',
-          keywords: ['banana', 'haus'],
           builder: (BuildContext context) {
-            return Container(color: Colors.yellow, child: const Text('Widget 4'));
+            return Container(color: Colors.yellow, child: const Text('InputTextField'));
           },
         ),
         CatalogWidget(
           name: 'FancyInputField',
           description: 'Description 4',
-          keywords: ['banana', 'haus'],
           builder: (BuildContext context) {
-            return Container(color: Colors.yellow, child: const Text('Widget 4'));
+            return Container(color: Colors.yellow, child: const Text('FancyInputField'));
           },
         ),
       ],
@@ -68,10 +72,11 @@ void main() {
               Align(
                 alignment: Alignment.topRight,
                 child: IconButton(
-                    icon: const Icon(Icons.ac_unit_rounded),
-                    onPressed: () {
-                      // Open Github
-                    }),
+                  icon: const Icon(Icons.ac_unit_rounded),
+                  onPressed: () {
+                    // Open Github
+                  },
+                ),
               ),
               Center(
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -82,10 +87,13 @@ void main() {
                       child: MouseRegion(
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
-                            onTap: () {
-                              context.go(context.namedLocation('home', queryParameters: {'q': keyword}));
-                            },
-                            child: Chip(label: Text(keyword))),
+                          onTap: () {
+                            context.go(context.namedLocation('home', queryParameters: {'q': keyword}));
+                          },
+                          child: Chip(
+                            label: Text(keyword),
+                          ),
+                        ),
                       ),
                     );
                   }),
@@ -142,11 +150,28 @@ class HomePage extends StatelessWidget {
     final catalog = InheritedCatalog.of(context).catalog;
     return Padding(
       padding: const EdgeInsets.all(64.0),
-      child: GridView(
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 200),
-        children: catalog.map((widget) {
-          return WidgetTile(widget: widget);
-        }).toList(),
+      child: Column(
+        children: [
+          const Row(
+            children: [
+              QueryTag(
+                query: 'Input',
+              ),
+              SizedBox(width: 16),
+              QueryTag(
+                query: 'banana',
+              )
+            ],
+          ),
+          Expanded(
+            child: GridView(
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 200),
+              children: catalog.map((widget) {
+                return WidgetTile(widget: widget);
+              }).toList(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -175,7 +200,7 @@ class _WidgetTileState extends State<WidgetTile> {
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
         onTap: () {
-          context.go(widget.widget.path);
+          context.push(widget.widget.path);
         },
         child: Card(
           color: _isHovered ? Colors.grey[200] : Colors.white,
@@ -254,7 +279,11 @@ class _WidgetCatalogState extends State<WidgetCatalog> {
           ),
         ],
         builder: (context, state, child) {
-          return CatalogShell(catalog: widget.catalog, child: child);
+          return CatalogShell(
+            catalog: widget.catalog,
+            queryParameters: state.uri.queryParameters,
+            child: child,
+          );
         },
       ),
     ],
@@ -287,9 +316,11 @@ class SearchField extends StatelessWidget {
   const SearchField({
     super.key,
     required this.onChanged,
+    required this.controller,
   });
 
   final void Function(String input) onChanged;
+  final TextEditingController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -302,6 +333,7 @@ class SearchField extends StatelessWidget {
         Expanded(
           flex: 2,
           child: TextField(
+            controller: controller,
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
             ),
@@ -361,10 +393,12 @@ class CatalogShell extends StatefulWidget {
     super.key,
     required this.child,
     required this.catalog,
+    this.queryParameters,
   });
 
   final Widget child;
   final List<CatalogWidget> catalog;
+  final Map<String, String>? queryParameters;
 
   @override
   State<CatalogShell> createState() => _CatalogShellState();
@@ -372,12 +406,22 @@ class CatalogShell extends StatefulWidget {
 
 class _CatalogShellState extends State<CatalogShell> {
   late List<CatalogWidget> _catalog = widget.catalog;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    updateSearchPhrase();
+  }
 
   @override
   void didUpdateWidget(covariant CatalogShell oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.catalog != widget.catalog) {
       _catalog = widget.catalog;
+    }
+    if (oldWidget.queryParameters != widget.queryParameters) {
+      updateSearchPhrase();
     }
   }
 
@@ -387,6 +431,7 @@ class _CatalogShellState extends State<CatalogShell> {
     final StatelessWidget title;
     if (state.topRoute?.path == '/') {
       title = SearchField(
+        controller: _searchController,
         onChanged: (String input) {
           if (input.isEmpty) {
             setState(() {
@@ -413,7 +458,16 @@ class _CatalogShellState extends State<CatalogShell> {
     );
   }
 
+  void updateSearchPhrase() {
+    final query = widget.queryParameters?['q'];
+    if (_searchController.text != query) {
+      _searchController.text = query ?? '';
+    }
+  }
+
   /// Builds the app bar leading button using the current location [Uri].
+  ///
+  /// Copy from https://github.com/flutter/packages/blob/main/packages/go_router/example/lib/shell_route_top_route.dart#L182-L195
   ///
   /// The [Scaffold]'s default back button cannot be used because it doesn't
   /// have the context of the current child.
@@ -426,8 +480,32 @@ class _CatalogShellState extends State<CatalogShell> {
   }
 }
 
-enum WidgetType {
-  input,
-  mobile,
-  desktop,
+class QueryTag extends StatelessWidget {
+  const QueryTag({super.key, required this.query});
+
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () {
+          context.go(context.namedLocation('home', queryParameters: {'q': query}));
+        },
+        child: Container(
+          width: 100,
+          height: 50,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.black),
+            borderRadius: BorderRadius.circular(8),
+            color: Colors.purple,
+          ),
+          child: Center(
+            child: Text(query),
+          ),
+        ),
+      ),
+    );
+  }
 }
