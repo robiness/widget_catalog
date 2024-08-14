@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stage_craft/stage_craft.dart';
+import 'package:widget_catalog/widgets/catalog_input_field.dart';
 
 void main() {
   usePathUrlStrategy();
@@ -8,61 +10,14 @@ void main() {
   runApp(
     WidgetCatalog(
       catalog: [
-        MyFancyWidget.catalog,
         CatalogWidget(
-          name: 'InputField',
-          description: 'Description 1',
-          builder: (BuildContext context) {
-            return Container(
-              width: 400,
-              height: 200,
-              color: Colors.red,
-              child: const Text('InputField'),
-            );
-          },
-        ),
-        CatalogWidget(
-          name: 'Container',
-          description: 'Description 2',
-          keywords: ['nice', 'hause', 'banana'],
-          builder: (BuildContext context) {
-            return Container(color: Colors.blue, child: const Text('ListTile'));
-          },
-        ),
-        CatalogWidget(
-          name: 'Overlay',
-          description: 'Description 3',
-          pageBuilder: (BuildContext context, Widget child) {
-            return Container(
-              color: Colors.purple,
-              child: Column(
-                children: [
-                  const Text('Wrapper'),
-                  Container(
-                    color: Colors.green,
-                    child: const Text('Overlay'),
-                  ),
-                ],
-              ),
-            );
-          },
-          builder: (BuildContext context) {
-            return Container(color: Colors.green, child: const Text('Overlay'));
-          },
-        ),
-        CatalogWidget(
-          name: 'InputTextField',
-          description: 'Description 4',
-          builder: (BuildContext context) {
-            return Container(color: Colors.yellow, child: const Text('InputTextField'));
-          },
-        ),
-        CatalogWidget(
-          name: 'FancyInputField',
-          description: 'Description 4',
-          builder: (BuildContext context) {
-            return Container(color: Colors.yellow, child: const Text('FancyInputField'));
-          },
+          name: 'CatalogInputField',
+          description: 'a input field for the widget catalog package',
+          stageBuilder: StageBuilder(
+            builder: (context) {
+              return CatalogInputField();
+            },
+          ),
         ),
       ],
       widgetPageBuilder: (context, CatalogWidget widget) {
@@ -100,13 +55,7 @@ void main() {
                 ]),
               ),
               Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    widget.pageBuilder?.call(context, widget.builder(context)) ?? widget.builder(context),
-                    if (widget.description != null) Text(widget.description!),
-                  ],
-                ),
+                child: widget.stageBuilder,
               ),
             ],
           ),
@@ -119,27 +68,6 @@ void main() {
   );
 }
 
-class MyFancyWidget extends StatelessWidget {
-  const MyFancyWidget({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.orangeAccent,
-      child: const Center(child: Text('MyFancyWidget')),
-    );
-  }
-
-  static final catalog = CatalogWidget(
-    name: 'FancyInputField',
-    description: 'Description 4',
-    keywords: ['fancy', 'my'],
-    builder: (BuildContext context) {
-      return const MyFancyWidget();
-    },
-  );
-}
-
 class HomePage extends StatelessWidget {
   const HomePage({
     super.key,
@@ -149,7 +77,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final catalog = InheritedCatalog.of(context).catalog;
     return Padding(
-      padding: const EdgeInsets.all(64.0),
+      padding: const EdgeInsets.symmetric(horizontal: 64.0, vertical: 16),
       child: Column(
         children: [
           const Row(
@@ -163,12 +91,16 @@ class HomePage extends StatelessWidget {
               )
             ],
           ),
+          const SizedBox(height: 16),
           Expanded(
-            child: GridView(
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 200),
-              children: catalog.map((widget) {
-                return WidgetTile(widget: widget);
-              }).toList(),
+            child: Container(
+              color: Colors.black26,
+              child: GridView(
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 200),
+                children: catalog.map((widget) {
+                  return WidgetTile(widget: widget);
+                }).toList(),
+              ),
             ),
           ),
         ],
@@ -205,14 +137,7 @@ class _WidgetTileState extends State<WidgetTile> {
         child: Card(
           color: _isHovered ? Colors.grey[200] : Colors.white,
           child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(widget.widget.name),
-                widget.widget.builder(context),
-                Text(widget.widget.keywords.join(', ')),
-              ],
-            ),
+            child: widget.widget.stageBuilder.builder(context),
           ),
         ),
       ),
@@ -352,17 +277,15 @@ class SearchField extends StatelessWidget {
 class CatalogWidget {
   CatalogWidget({
     required this.name,
-    required this.builder,
-    this.pageBuilder,
+    required this.stageBuilder,
     this.description,
     this.keywords = const [],
   });
 
   final String name;
   final String? description;
-  final WidgetBuilder builder;
-  final Widget Function(BuildContext context, Widget child)? pageBuilder;
   final List<String> keywords;
+  final StageBuilder stageBuilder;
 
   String get path => '/$name';
 }
@@ -411,7 +334,7 @@ class _CatalogShellState extends State<CatalogShell> {
   @override
   void initState() {
     super.initState();
-    updateSearchPhrase();
+    _updateSearchPhrase();
   }
 
   @override
@@ -421,7 +344,7 @@ class _CatalogShellState extends State<CatalogShell> {
       _catalog = widget.catalog;
     }
     if (oldWidget.queryParameters != widget.queryParameters) {
-      updateSearchPhrase();
+      _updateSearchPhrase();
     }
   }
 
@@ -458,7 +381,7 @@ class _CatalogShellState extends State<CatalogShell> {
     );
   }
 
-  void updateSearchPhrase() {
+  void _updateSearchPhrase() {
     final query = widget.queryParameters?['q'];
     if (_searchController.text != query) {
       _searchController.text = query ?? '';

@@ -12,6 +12,7 @@ dependencies:
   go_router: ^14.2.1
   flutter_web_plugins:
     sdk: flutter
+  stage_craft: ^1.0.1
 
 dev_dependencies:
   flutter_test:
