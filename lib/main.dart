@@ -14,8 +14,6 @@ void main() {
           description: 'Description 1',
           builder: (BuildContext context) {
             return Container(
-              width: 400,
-              height: 200,
               color: Colors.red,
               child: const Text('InputField'),
             );
@@ -334,8 +332,15 @@ class SearchField extends StatelessWidget {
           flex: 2,
           child: TextField(
             controller: controller,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: IconButton(
+                onPressed: () {
+                  context.go(context.namedLocation('home'));
+                },
+                icon: const Icon(Icons.close),
+              ),
             ),
             onChanged: onChanged,
           ),
