@@ -259,8 +259,15 @@ class SearchField extends StatelessWidget {
           flex: 2,
           child: TextField(
             controller: controller,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: IconButton(
+                onPressed: () {
+                  context.go(context.namedLocation('home'));
+                },
+                icon: const Icon(Icons.close),
+              ),
             ),
             onChanged: onChanged,
           ),
